@@ -67,7 +67,7 @@ BUNZINA_API_TIMEOUT_MS=5000
 O deploy foi preparado para o AWS Academy Learner Lab usando a role existente:
 
 ```text
-arn:aws:iam::056832840038:role/LabRole
+arn:aws:iam::<AWS_ACCOUNT_ID>:role/LabRole
 ```
 
 As credenciais do Learner Lab são temporárias. Sempre que o lab reiniciar,
@@ -94,13 +94,15 @@ Cadastre os seguintes secrets no repositório:
 AWS_ACCESS_KEY_ID
 AWS_SECRET_ACCESS_KEY
 AWS_SESSION_TOKEN
+AWS_ACCOUNT_ID
+ECR_REPOSITORY
 BUNZINA_API_BASE_URL
 ```
 
 O workflow monta automaticamente:
 
 ```text
-ECR_IMAGE_URI=056832840038.dkr.ecr.us-east-1.amazonaws.com/bunzina-lambda:latest
+ECR_IMAGE_URI=$AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/$ECR_REPOSITORY:latest
 ```
 
 ## Deploy manual
@@ -112,13 +114,15 @@ do Serverless/Docker.
 
 ```bash
 export AWS_DEFAULT_REGION="us-east-1"
-export ECR_IMAGE_URI="056832840038.dkr.ecr.us-east-1.amazonaws.com/bunzina-lambda:latest"
+export AWS_ACCOUNT_ID="<aws-account-id-do-learner-lab>"
+export ECR_REPOSITORY="<nome-do-repositorio-ecr>"
+export ECR_IMAGE_URI="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPOSITORY:latest"
 export BUNZINA_API_BASE_URL="https://api.bunzina.example.com"
 
-aws ecr create-repository --repository-name bunzina-lambda --region "$AWS_DEFAULT_REGION"
+aws ecr create-repository --repository-name "$ECR_REPOSITORY" --region "$AWS_DEFAULT_REGION"
 
 aws ecr get-login-password --region "$AWS_DEFAULT_REGION" \
-  | docker login --username AWS --password-stdin 056832840038.dkr.ecr.us-east-1.amazonaws.com
+  | docker login --username AWS --password-stdin "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com"
 
 bun run image:build
 
@@ -134,9 +138,12 @@ de duplicidade e pode ser ignorado.
 Para remover a stack manualmente:
 
 ```bash
-export ECR_IMAGE_URI="056832840038.dkr.ecr.us-east-1.amazonaws.com/bunzina-lambda:latest"
+export AWS_DEFAULT_REGION="us-east-1"
+export AWS_ACCOUNT_ID="<aws-account-id-do-learner-lab>"
+export ECR_REPOSITORY="<nome-do-repositorio-ecr>"
+export ECR_IMAGE_URI="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPOSITORY:latest"
 
-bunx serverless remove --region us-east-1
+bunx serverless remove --region "$AWS_DEFAULT_REGION"
 ```
 
 ## Teste rápido

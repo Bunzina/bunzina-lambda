@@ -12,9 +12,8 @@ jobs:
 
     env:
       AWS_REGION: us-east-1
-      AWS_ACCOUNT_ID: "056832840038"
-      ECR_REPOSITORY: bunzina-lambda
-      ECR_IMAGE_URI: 056832840038.dkr.ecr.us-east-1.amazonaws.com/bunzina-lambda:latest
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+      ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
       BUNZINA_API_BASE_URL: ${{ secrets.BUNZINA_API_BASE_URL }}
 
     steps:
@@ -42,6 +41,10 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set ECR image URI
+        run: |
+          echo "ECR_IMAGE_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY:latest" >> "$GITHUB_ENV"
 
       - name: Ensure ECR repository exists
         run: |
