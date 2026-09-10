@@ -1,0 +1,29 @@
+service: bunzina-lambda
+
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  stage: main
+  region: ${opt:region, "us-east-1"}
+  architecture: x86_64
+  memorySize: 256
+  timeout: 10
+  stackName: bunzina-lambda
+  httpApi:
+    name: bunzina-api-gateway
+  iam:
+    role: arn:aws:iam::${env:AWS_ACCOUNT_ID}:role/LabRole
+  environment:
+    BUNZINA_API_BASE_URL: ${env:BUNZINA_API_BASE_URL, "https://api.bunzina.example.com"}
+    BUNZINA_API_TIMEOUT_MS: ${env:BUNZINA_API_TIMEOUT_MS, "5000"}
+
+functions:
+  login:
+    name: bunzina-login-lambda
+    image:
+      uri: ${env:ECR_IMAGE_URI}
+    events:
+      - httpApi:
+          method: POST
+          path: /auth/login
