@@ -2,6 +2,19 @@
 
 AWS Lambda de autenticação do Bunzina, executada com Bun em container image e exposta por API Gateway em `POST /auth/login`.
 
+## Tecnologias utilizadas
+
+- Bun
+- TypeScript
+- AWS Lambda
+- API Gateway HTTP API
+- Docker
+- Amazon ECR
+- Serverless Framework
+- GitHub Actions
+- Axios
+- Zod
+
 ## Como funciona
 
 A Lambda valida o payload de login e delega a autenticação para a API principal:
@@ -12,6 +25,35 @@ API Gateway -> Lambda Bun -> POST /auth/login no bunzina
 
 Ela não acessa banco nem gera JWT. O token retornado é o mesmo emitido pelo
 `bunzina`.
+
+## Arquitetura
+
+Este repositório representa a Function Serverless de autenticação da aplicação
+Bunzina.
+
+O API Gateway expõe apenas a rota `POST /auth/login`, conforme escopo confirmado
+para esta etapa. Essa rota encaminha a requisição para a Lambda, que valida o
+payload recebido e delega a autenticação para a API principal `bunzina`.
+
+A Lambda não acessa diretamente o banco de dados e não gera JWT. A
+responsabilidade de validar credenciais, consultar usuários e gerar o token
+continua na aplicação principal.
+
+```mermaid
+flowchart LR
+  Client[Cliente] -->|POST /auth/login| Gateway[API Gateway]
+  Gateway --> Lambda[Lambda Auth - Bun]
+  Lambda -->|POST /auth/login| Bunzina[API principal bunzina]
+  Bunzina --> Database[(PostgreSQL)]
+  Bunzina -->|JWT| Lambda
+  Lambda -->|Resposta da API principal| Gateway
+  Gateway --> Client
+```
+
+## Documentação complementar
+
+Os diagramas de arquitetura e sequência da solução ficam centralizados no
+repositório principal `bunzina`, dentro da pasta `docs`.
 
 ## Endpoint
 
@@ -51,6 +93,33 @@ Exemplo de payload:
 }
 ```
 
+## Swagger/Postman
+
+Este repositório não possui Swagger próprio, pois a Lambda não executa um
+servidor HTTP diretamente. A rota pública é exposta pelo API Gateway em
+`POST /auth/login`.
+
+A documentação Swagger da API principal `bunzina` fica disponível ao executar o
+projeto principal localmente:
+
+```text
+http://localhost:<porta>/swagger
+```
+
+O contrato exposto por esta Lambda é:
+
+```http
+POST /auth/login
+Content-Type: application/json
+```
+
+```json
+{
+  "document": "11144477735",
+  "password": "senha123"
+}
+```
+
 ## Variáveis de ambiente
 
 Variáveis usadas pela Lambda em runtime:
@@ -80,6 +149,28 @@ atualize os secrets `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` e
 bun install
 bun test
 bunx tsc --noEmit
+```
+
+Para testar o fluxo localmente com Docker, mantenha a API principal `bunzina`
+rodando e aponte `BUNZINA_API_BASE_URL` para ela.
+
+Exemplo considerando o `bunzina` em `http://localhost:8081`:
+
+```bash
+bun run image:build
+
+docker run --rm -p 9000:8080 \
+  -e BUNZINA_API_BASE_URL="http://host.docker.internal:8081" \
+  -e BUNZINA_API_TIMEOUT_MS="5000" \
+  bunzina-lambda:lambda
+```
+
+Em outro terminal:
+
+```bash
+curl -i -X POST "http://localhost:9000/2015-03-31/functions/function/invocations" \
+  -H "Content-Type: application/json" \
+  -d '{"body":"{\"document\":\"11144477735\",\"password\":\"senha123\"}","headers":{"content-type":"application/json"},"requestContext":{"http":{"method":"POST","path":"/auth/login"}}}'
 ```
 
 ## Deploy via GitHub Actions
